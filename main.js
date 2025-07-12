@@ -84,6 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (viewId === 'view-results') {
                 results.render(dataLogger.getRawBufferDataForFrontend());
             } else if (viewId === 'view-game') {
+                dataLogger.clearGameLogs();
                 game.resetUI();
             } else if (viewId === 'view-tests') {
                 tests.reset();
