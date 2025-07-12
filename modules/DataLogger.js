@@ -1,38 +1,29 @@
-// modules/DataLogger.js - 数据采集模块 (最终汇总打包+健壮发送版) v7.0
+// modules/DataLogger.js - 数据采集模块 (最终健壮版) v8.0
 
 export class DataLogger {
     constructor() {
         this.participantId = this.getOrCreateId('ca-participantId');
-        this.sessionId = this.getSessionId();
+        this.sessionId = this.getSessionId(); // 确保 sessionId 在构造时就被正确设置
         this.protocolVersion = '1.0';
         
-        // 确保这里是你的 Vercel 地址
         this.backendUrl = 'https://psygame.vercel.app/api/log';
 
-        // 仅保留在页面关闭时作为最后保障的发送机制
-        // 使用 'pagehide' 事件，它在某些移动端浏览器上比 'visibilitychange' 更可靠
+        // 在页面关闭时作为最后保障的发送机制
         window.addEventListener('pagehide', () => {
             this.sendFinalReport();
         }, { capture: true });
     }
 
-    /**
-     * 记录一个事件，只负责写入 localStorage。
-     * @param {string} eventType - 事件类型
-     * @param {object} eventPayload - 事件负载
-     */
     logEvent(eventType, eventPayload) {
-        if (!eventType) {
-            console.error("DataLogger Error: eventType cannot be null or empty.");
-            return;
-        }
+        if (!eventType) return;
 
-        let logBuffer = this.loadLogsForSession(this.sessionId);
+        // 【核心修正】直接从 localStorage 加载并更新，确保数据一致性
+        const logBuffer = this.loadLogsForSession();
         const eventSequenceId = logBuffer.length;
 
         const event = {
             participantId: this.participantId,
-            sessionId: this.sessionId,
+            sessionId: this.sessionId, // 直接使用 this.sessionId
             protocolVersion: this.protocolVersion,
             eventSequenceId: eventSequenceId,
             clientTimestamp: Date.now(),
@@ -42,19 +33,14 @@ export class DataLogger {
 
         logBuffer.push(event);
         
-        this.saveLogsForSession(this.sessionId, logBuffer);
-        console.log(`[Event Persisted] Session: ${this.sessionId}, ID: #${event.eventSequenceId} - ${event.eventType}`);
+        this.saveLogsForSession(logBuffer);
+        console.log(`[Event Persisted] Session: ${this.sessionId}, ID: #${eventSequenceId} - ${event.eventType}`);
     }
 
-    /**
-     * 构建最终的汇总报告
-     * @returns {object} 一个包含所有游戏和问卷数据的对象
-     */
     buildFinalReport() {
-        const allEvents = this.loadLogsForSession(this.sessionId);
+        const allEvents = this.loadLogsForSession();
         
         const gameProcessData = allEvents.filter(e => !e.eventType.startsWith('test_'));
-
         const questionnaireResults = {};
         const testEndEvents = allEvents.filter(e => e.eventType === 'test_end');
         testEndEvents.forEach(e => {
@@ -67,7 +53,8 @@ export class DataLogger {
             }
         });
         
-        const finalReport = {
+        // 【核心修正】确保报告中的 sessionId 也是 this.sessionId
+        return {
             participantId: this.participantId,
             sessionId: this.sessionId,
             reportTimestamp: Date.now(),
@@ -76,75 +63,76 @@ export class DataLogger {
                 questionnaires: questionnaireResults
             }
         };
-
-        return finalReport;
     }
 
-    /**
-     * 发送最终的汇总报告
-     */
     sendFinalReport() {
-        const report = this.buildFinalReport();
-
-        // 严格检查是否有有意义的数据
-        const meaningfulGameplayEvents = report.data.gameplay.filter(
-            e => e.eventType !== 'experiment_session_start' && e.eventType !== 'experiment_session_end'
-        );
-
-        if (meaningfulGameplayEvents.length === 0 && Object.keys(report.data.questionnaires).length === 0) {
-            console.log("No meaningful data to send. Aborting final report.");
-            this.clearAllDataForSession(); // 清理无用的会话数据
+        // 在发送前检查 sessionId 是否有效
+        if (!this.sessionId || this.sessionId === 'undefined') {
+            console.error("Aborting sendFinalReport due to invalid sessionId.");
             return;
         }
 
-        const dataToSend = JSON.stringify(report, null, 2);
+        const report = this.buildFinalReport();
+
+        const meaningfulGameplayEvents = report.data.gameplay.filter(
+            e => e.eventType !== 'experiment_session_start' && e.eventType !== 'experiment_session_end'
+        );
+        if (meaningfulGameplayEvents.length === 0 && Object.keys(report.data.questionnaires).length === 0) {
+            console.log("No meaningful data to send. Aborting final report.");
+            this.clearAllDataForSession();
+            return;
+        }
+
+        // 【核心修正】为 sendBeacon 准备一个 Blob 对象，这是最可靠的方式
+        const dataString = JSON.stringify(report);
+        const dataBlob = new Blob([dataString], { type: 'application/json' });
         
         console.log("--- Sending Final Report ---", report);
         
-        // navigator.sendBeacon 是一个非阻塞请求，非常适合在页面卸载时使用
-        if (navigator.sendBeacon && dataToSend.length < 65536) { // sendBeacon 对数据大小有限制
+        if (navigator.sendBeacon && dataBlob.size < 65536) {
             try {
-                const success = navigator.sendBeacon(this.backendUrl, dataToSend);
-                if (success) {
-                    console.log("Final report successfully queued for sending via sendBeacon.");
+                if (navigator.sendBeacon(this.backendUrl, dataBlob)) {
+                    console.log("Final report successfully queued via sendBeacon.");
                     this.clearAllDataForSession();
                 } else {
-                    console.error("sendBeacon queueing failed. The data might be too large or other issues.");
+                    console.error("sendBeacon returned false. Attempting fetch fallback.");
+                    this.sendWithFetch(dataString); // sendBeacon 失败时尝试 fetch
                 }
             } catch(e) {
                  console.error("Error calling sendBeacon:", e);
+                 this.sendWithFetch(dataString); // 异常时尝试 fetch
             }
         } else {
-            // 作为备用方案，或当数据过大时使用 fetch
-            fetch(this.backendUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: dataToSend,
-                keepalive: true, // 关键！尝试让请求在页面卸载后继续进行
-            })
-            .then(response => {
-                if (response.ok) {
-                    console.log("Final report successfully sent via fetch.");
-                    this.clearAllDataForSession();
-                } else {
-                    console.error(`Server responded with status ${response.status}. Data might not have been saved.`);
-                }
-            })
-            .catch(error => {
-                console.error('Network error while sending final report via fetch:', error);
-            });
+            this.sendWithFetch(dataString);
         }
     }
+    
+    // 【新】将 fetch 逻辑提取为一个独立的函数
+    sendWithFetch(dataString) {
+        fetch(this.backendUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: dataString,
+            keepalive: true,
+        })
+        .then(response => {
+            if (response.ok) {
+                console.log("Final report successfully sent via fetch.");
+                this.clearAllDataForSession();
+            } else {
+                console.error(`Server responded with status ${response.status}.`);
+            }
+        })
+        .catch(error => {
+            console.error('Network error while sending final report via fetch:', error);
+        });
+    }
 
-    /**
-     * 清理当前会话的所有本地存储数据
-     */
     clearAllDataForSession() {
         console.log(`Clearing all stored data for session: ${this.sessionId}`);
         localStorage.removeItem('ca-gameLogs-' + this.sessionId);
         localStorage.removeItem('bis11_results');
         localStorage.removeItem('csi_results');
-        // sessionStorage 会在标签页关闭时自动清除，无需手动处理
     }
 
     // --- 辅助函数 ---
@@ -152,11 +140,7 @@ export class DataLogger {
         let id = localStorage.getItem(key);
         if (!id) {
             id = this.generateUniqueId();
-            try {
-                localStorage.setItem(key, id);
-            } catch (e) {
-                console.error("Could not write to localStorage.", e);
-            }
+            localStorage.setItem(key, id);
         }
         return id;
     }
@@ -170,22 +154,19 @@ export class DataLogger {
         return sid;
     }
 
-    loadLogsForSession(sessionId) {
+    loadLogsForSession() {
+        // 【核心修正】所有加载都基于 this.sessionId
+        if (!this.sessionId) return [];
         try {
-            const storedLogs = localStorage.getItem('ca-gameLogs-' + sessionId);
+            const storedLogs = localStorage.getItem('ca-gameLogs-' + this.sessionId);
             return storedLogs ? JSON.parse(storedLogs) : [];
-        } catch (e) { 
-            console.error("Failed to load logs from localStorage.", e);
-            return []; 
-        }
+        } catch (e) { return []; }
     }
 
-    saveLogsForSession(sessionId, logs) {
-        try {
-            localStorage.setItem('ca-gameLogs-' + sessionId, JSON.stringify(logs));
-        } catch(e) { 
-            console.error("Failed to save logs to localStorage.", e);
-        }
+    saveLogsForSession(logs) {
+        // 【核心修正】所有保存都基于 this.sessionId
+        if (!this.sessionId) return;
+        localStorage.setItem('ca-gameLogs-' + this.sessionId, JSON.stringify(logs));
     }
 
     generateUniqueId() {
@@ -195,6 +176,6 @@ export class DataLogger {
     }
     
     getRawBufferDataForFrontend() {
-        return this.loadLogsForSession(this.sessionId);
+        return this.loadLogsForSession();
     }
 }
