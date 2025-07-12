@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>心智航图 - 认知智能画像平台</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="app-container">
+        <!-- 视图一：主导航页 -->
+        <div id="view-home" class="view active">
+            <header class="main-header">
+                <h1>心智航图</h1>
+                <p>一个探索认知策略的智能测评平台</p>
+            </header>
+            <main class="card-container">
+                <div class="card" data-target="view-intro">
+                    <div class="card-icon">📖</div>
+                    <h2>项目介绍</h2>
+                    <p>了解本项目的研究背景、目的与意义。</p>
+                    <button class="card-button">了解详情</button>
+                </div>
+                <div class="card" data-target="view-game">
+                    <div class="card-icon">🎮</div>
+                    <h2>动态迷宫游戏</h2>
+                    <p>通过一个充满变化的迷宫挑战，展现你的认知画像。</p>
+                    <button class="card-button">开始挑战</button>
+                </div>
+                <div class="card" data-target="view-tests">
+                    <div class="card-icon">📝</div>
+                    <h2>心理测评</h2>
+                    <p>完成一系列经典的心理学测验，以建立参照基线。</p>
+                    <button class="card-button">开始测评</button>
+                </div>
+                <div class="card" data-target="view-results">
+                    <div class="card-icon">📊</div>
+                    <h2>结果分析</h2>
+                    <p>查看根据您的表现生成的专属认知画像与分析报告。</p>
+                    <button class="card-button">查看报告</button>
+                </div>
+            </main>
+        </div>
+
+        <!-- 视图二：项目介绍 -->
+        <div id="view-intro" class="view">
+            <header class="module-header">
+                <button class="back-button" data-target="view-home">&lt;返回主页</button>
+                <h2>项目介绍</h2>
+            </header>
+            <main class="module-content">
+                <div class="intro-text-container">
+                    <h2>项目背景</h2>
+                    <p>我们正处在一个激动人心的时代，人工智能的飞速发展正深刻地改变着各个领域，心理学也不例外。传统的心理测评，如问卷和量表，更像是一张“静态快照”，它能告诉我们一个人的能力或特质“是什么”，却难以揭示其在解决问题过程中“如何思考”的动态智慧。</p>
+                    <p>本项目正是诞生于这一技术革新的浪潮之巅，旨在探索人工智能与认知科学的深度融合，推动心理测评从“结果导向”向“过程导向”的范式革新。</p>
+                    <hr>
+                    <h2>赛事渊源：“厚粲杯”全国挑战赛</h2>
+                    <p>本项目是为响应首届“厚粲杯”全国大学生心理与认知智能测评挑战赛而生。该赛事以“心理学引领科学测评，智能化护航人才发展”为宗旨，鼓励大学生运用前沿技术，解决真实世界的问题。</p>
+                    <p>详情请关注公众号：“心理与认知智能测评挑战赛”</p>
+                    <p>我们致力于研发一款新颖的、非问卷类的认知测评工具，以响应大赛对于创新精神和实践能力的号召。</p>
+                    <hr>
+                    <h2>我们的方案：“心智航图”项目简介</h2>
+                    <p>为了精准捕捉并理解复杂的认知过程，我们团队提出了“心智航图”这一创新性测评方案。我们相信，个体的智慧不仅体现在“能解决多难的问题”，更体现在“如何解决问题”的策略、适应性和学习能力上。</p>
+                    <p>“心智航图”的核心是一个动态空间迷宫游戏。它不再是一个静态的谜题，而是一个充满变化与挑战的微观世界。您在游戏中的每一次按键、每一次移动、每一次犹豫、以及对突发事件的每一次反应，都将被系统精确地记录下来，形成一条富含信息的行为序列数据流。</p>
+                    <p>我们的最终目标，是利用深度学习技术，从这些原始的过程数据中，自主“发现”并“学习”不同个体的认知策略模式，最终为您描绘一幅专属的、多维度的认知智能画像。</p>
+                    <hr>
+                    <h2>致参与者：您的贡献与数据隐私</h2>
+                    <p><strong>您的参与至关重要！</strong> 您在游戏和测验中提供的每一份数据，都是训练我们认知模型、推动心理测评技术进步的宝贵材料。您的体验将直接帮助我们验证这套新工具的科学性与有效性。</p>
+                    <p>我们郑重承诺：</p>
+                    <ul>
+                        <li><strong>完全匿名：</strong> 所有数据都将进行严格的匿名化处理，我们无法、也不会将数据与您的个人身份相关联。</li>
+                        <li><strong>仅限研究：</strong> 所有数据仅用于本次大赛的学术研究目的，绝不会用于任何商业用途或泄露您的个人隐私。</li>
+                        <li><strong>自愿参与：</strong> 您可以随时中断并退出，您的所有权利都将得到充分保障。</li>
+                    </ul>
+                    <p>感谢您愿意为智能测评发展做出贡献！</p>
+                </div>
+            </main>
+        </div>
+
+        <!-- 视图三：迷宫游戏 -->
+        <div id="view-game" class="view">
+            <header class="module-header">
+                <button class="back-button" data-target="view-home">&lt;返回主页</button>
+                <h2>动态迷宫游戏</h2>
+            </header>
+            <main class="module-content game-content">
+                <div id="game-status-bar">
+                    <span id="game-level"></span> | <span id="game-status"></span>
+                </div>
+                <canvas id="mazeCanvas"></canvas>
+                <div id="game-controls">
+                    <button id="startGameBtn">开始游戏</button>
+                </div>
+            </main>
+        </div>
+        
+        <!-- 视图四：心理测评 -->
+        <div id="view-tests" class="view">
+            <header class="module-header">
+                <button class="back-button" data-target="view-home">&lt;返回主页</button>
+                <h2>标准化心理测评</h2>
+            </header>
+            <main class="module-content">
+                <div id="tests-container">
+                    <h3>功能待开发...</h3>
+                    <p>此模块将用于承载经典的心理学量表和测验，例如冲动性量表、数字广度测验等，用以收集校标数据，验证本游戏测评工具的有效性。</p>
+                </div>
+            </main>
+        </div>
+
+        <!-- 视图五：结果分析 -->
+        <div id="view-results" class="view">
+            <header class="module-header">
+                <button class="back-button" data-target="view-home">&lt;返回主页</button>
+                <h2>我的结果分析报告</h2>
+            </header>
+            <main class="module-content results-content">
+                <div id="results-placeholder">
+                    <p>请先完成“动态迷宫游戏”才能生成报告。</p>
+                </div>
+                <div id="results-display" class="hidden">
+                    <div class="charts-section">
+                        <div class="chart-container">
+                            <h3>能力雷达图</h3>
+                            <canvas id="radarChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+    </div>
+
+    <!-- 自定义模态框/提示框 -->
+    <div id="custom-alert-overlay" class="hidden">
+        <div id="custom-alert-box">
+            <p id="custom-alert-message"></p>
+            <button id="custom-alert-ok-btn">确定</button>
+        </div>
+    </div>
+
+    <!-- 引入脚本 (顺序至关重要) -->
+    <script src="./lib/chart.min.js"></script>
+    <script src="./modules/DataLogger.js"></script>
+    <script src="./modules/Game.js"></script>
+    <script src="./modules/Tests.js"></script>
+    <script src="./modules/Results.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>

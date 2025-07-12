@@ -1,0 +1,62 @@
+/* 全局与布局 */
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; margin: 0; background-color: #f0f2f5; color: #333; }
+.view { display: none; width: 100%; min-height: 100vh; animation: fadeIn 0.4s ease-in-out; }
+.view.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* 主导航页 */
+#view-home .main-header { text-align: center; padding: 40px 20px; }
+.card-container { display: flex; justify-content: center; flex-wrap: wrap; gap: 30px; padding: 20px; }
+.card { background: #fff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); width: 280px; padding: 25px; text-align: center; cursor: pointer; transition: transform 0.3s, box-shadow 0.3s; }
+.card:hover { transform: translateY(-8px); box-shadow: 0 8px 20px rgba(0,0,0,0.12); }
+.card-icon { font-size: 3rem; margin-bottom: 15px; }
+.card h2 { margin-top: 0; font-size: 1.25rem; }
+.card p { font-size: 0.9rem; color: #666; min-height: 60px; }
+.card-button { background-color: #007aff; color: white; border: none; border-radius: 8px; padding: 10px 20px; font-weight: bold; cursor: pointer; margin-top: 15px; }
+
+/* 模块通用头部 */
+.module-header { display: flex; align-items: center; padding: 15px 30px; background: #fff; border-bottom: 1px solid #ddd; }
+.back-button { background: none; border: 1px solid #ccc; font-size: 1rem; cursor: pointer; padding: 5px 10px; border-radius: 5px; }
+.module-header h2 { margin: 0; margin-left: 20px; font-size: 1.5rem; }
+
+/* 模块内容区 */
+.module-content { padding: 40px; max-width: 900px; margin: 0 auto; }
+.game-content { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+#game-status-bar { font-size: 1.2rem; background: #e9ecef; padding: 10px 20px; border-radius: 8px; color: #495057; }
+#mazeCanvas { border: 2px solid #343a40; background-color: #fff; }
+.intro-text-container { line-height: 1.8; font-size: 1.1rem; color: #444; }
+.intro-text-container h2 { color: #0056b3; border-bottom: 2px solid #e0e0e0; padding-bottom: 10px; margin-top: 40px; }
+.intro-text-container hr { border: 0; height: 1px; background-color: #ddd; margin: 40px 0; }
+.intro-text-container ul { list-style-type: disc; padding-left: 20px; }
+.intro-text-container li { margin-bottom: 10px; }
+
+/* 结果页 */
+.hidden { display: none !important; }
+#results-placeholder { text-align: center; padding: 50px; background: #fafafa; border-radius: 10px; }
+.charts-section { display: flex; justify-content: center; width: 100%; margin: 20px 0; }
+.chart-container { max-width: 500px; width: 100%; }
+
+/* 自定义模态框 */
+#custom-alert-overlay {
+    position: fixed; top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex; justify-content: center; align-items: center;
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+#custom-alert-overlay:not(.hidden) { opacity: 1; pointer-events: auto; }
+#custom-alert-box {
+    background: white; padding: 30px 40px; border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.2); text-align: center;
+    max-width: 400px; transform: scale(0.9); transition: transform 0.3s ease;
+}
+#custom-alert-overlay:not(.hidden) #custom-alert-box { transform: scale(1); }
+#custom-alert-message { font-size: 1.1rem; line-height: 1.6; margin-bottom: 25px; }
+#custom-alert-ok-btn {
+    background-color: #007bff; color: white; border: none;
+    border-radius: 8px; padding: 12px 30px; font-weight: bold;
+    cursor: pointer; font-size: 1rem;
+}
