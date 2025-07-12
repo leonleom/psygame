@@ -38,7 +38,11 @@ export default async function handler(request, response) {
     // 4. 将数据写入文件
     // JSON.stringify的第三个参数2是为了让JSON文件格式化，更易读
     await fs.writeFile(filePath, JSON.stringify(incomingData, null, 2));
-
+    
+    console.log("--- START OF GAME DATA ---");
+    console.log(jsonDataString);
+    console.log("--- END OF GAME DATA ---");
+    
     // 5. 成功响应
     // 告诉前端：“我成功收到并保存了你的数据！”
     console.log(`Successfully saved log to: ${filePath}`);
