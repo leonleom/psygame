@@ -1,11 +1,12 @@
-// modules/DataLogger.js - 数据采集模块 (最终健壮版) v8.0
+// modules/DataLogger.js - 数据采集模块 (最终完整版 - 职责分离) v9.0
 
 export class DataLogger {
     constructor() {
         this.participantId = this.getOrCreateId('ca-participantId');
-        this.sessionId = this.getSessionId(); // 确保 sessionId 在构造时就被正确设置
+        this.sessionId = this.getSessionId();
         this.protocolVersion = '1.0';
         
+        // 确保这里是你的 Vercel 地址
         this.backendUrl = 'https://psygame.vercel.app/api/log';
 
         // 在页面关闭时作为最后保障的发送机制
@@ -14,16 +15,23 @@ export class DataLogger {
         }, { capture: true });
     }
 
+    /**
+     * 记录一个事件，只负责写入 localStorage。
+     * @param {string} eventType - 事件类型
+     * @param {object} eventPayload - 事件负载
+     */
     logEvent(eventType, eventPayload) {
-        if (!eventType) return;
+        if (!eventType) {
+            console.error("DataLogger Error: eventType cannot be null or empty.");
+            return;
+        }
 
-        // 【核心修正】直接从 localStorage 加载并更新，确保数据一致性
-        const logBuffer = this.loadLogsForSession();
+        let logBuffer = this.loadLogsForSession();
         const eventSequenceId = logBuffer.length;
 
         const event = {
             participantId: this.participantId,
-            sessionId: this.sessionId, // 直接使用 this.sessionId
+            sessionId: this.sessionId,
             protocolVersion: this.protocolVersion,
             eventSequenceId: eventSequenceId,
             clientTimestamp: Date.now(),
@@ -37,6 +45,10 @@ export class DataLogger {
         console.log(`[Event Persisted] Session: ${this.sessionId}, ID: #${eventSequenceId} - ${event.eventType}`);
     }
 
+    /**
+     * 构建最终的汇总报告
+     * @returns {object} 一个包含所有游戏和问卷数据的对象
+     */
     buildFinalReport() {
         const allEvents = this.loadLogsForSession();
         
@@ -53,7 +65,6 @@ export class DataLogger {
             }
         });
         
-        // 【核心修正】确保报告中的 sessionId 也是 this.sessionId
         return {
             participantId: this.participantId,
             sessionId: this.sessionId,
@@ -65,8 +76,10 @@ export class DataLogger {
         };
     }
 
+    /**
+     * 发送最终的汇总报告
+     */
     sendFinalReport() {
-        // 在发送前检查 sessionId 是否有效
         if (!this.sessionId || this.sessionId === 'undefined') {
             console.error("Aborting sendFinalReport due to invalid sessionId.");
             return;
@@ -77,13 +90,13 @@ export class DataLogger {
         const meaningfulGameplayEvents = report.data.gameplay.filter(
             e => e.eventType !== 'experiment_session_start' && e.eventType !== 'experiment_session_end'
         );
+
         if (meaningfulGameplayEvents.length === 0 && Object.keys(report.data.questionnaires).length === 0) {
             console.log("No meaningful data to send. Aborting final report.");
             this.clearAllDataForSession();
             return;
         }
 
-        // 【核心修正】为 sendBeacon 准备一个 Blob 对象，这是最可靠的方式
         const dataString = JSON.stringify(report);
         const dataBlob = new Blob([dataString], { type: 'application/json' });
         
@@ -96,18 +109,21 @@ export class DataLogger {
                     this.clearAllDataForSession();
                 } else {
                     console.error("sendBeacon returned false. Attempting fetch fallback.");
-                    this.sendWithFetch(dataString); // sendBeacon 失败时尝试 fetch
+                    this.sendWithFetch(dataString);
                 }
             } catch(e) {
                  console.error("Error calling sendBeacon:", e);
-                 this.sendWithFetch(dataString); // 异常时尝试 fetch
+                 this.sendWithFetch(dataString);
             }
         } else {
             this.sendWithFetch(dataString);
         }
     }
     
-    // 【新】将 fetch 逻辑提取为一个独立的函数
+    /**
+     * 使用 fetch API 发送数据的备用方法
+     * @param {string} dataString - 已转换为字符串的 JSON 数据
+     */
     sendWithFetch(dataString) {
         fetch(this.backendUrl, {
             method: 'POST',
@@ -120,7 +136,7 @@ export class DataLogger {
                 console.log("Final report successfully sent via fetch.");
                 this.clearAllDataForSession();
             } else {
-                console.error(`Server responded with status ${response.status}.`);
+                console.error(`Server responded with status ${response.status}. Data might not have been saved.`);
             }
         })
         .catch(error => {
@@ -128,6 +144,21 @@ export class DataLogger {
         });
     }
 
+    /**
+     * 【【【核心方法】】】
+     * 清除当前会话中所有的游戏日志 (非 test_ 开头的事件)，由 main.js 在导航到游戏时调用。
+     */
+    clearGameLogs() {
+        console.log(`Clearing game logs for session: ${this.sessionId}`);
+        
+        let logBuffer = this.loadLogsForSession();
+        let newLogBuffer = logBuffer.filter(e => e.eventType.startsWith('test_'));
+        this.saveLogsForSession(newLogBuffer);
+    }
+
+    /**
+     * 清理当前会话的所有本地存储数据 (主要在发送成功后调用)
+     */
     clearAllDataForSession() {
         console.log(`Clearing all stored data for session: ${this.sessionId}`);
         localStorage.removeItem('ca-gameLogs-' + this.sessionId);
@@ -155,16 +186,17 @@ export class DataLogger {
     }
 
     loadLogsForSession() {
-        // 【核心修正】所有加载都基于 this.sessionId
         if (!this.sessionId) return [];
         try {
             const storedLogs = localStorage.getItem('ca-gameLogs-' + this.sessionId);
             return storedLogs ? JSON.parse(storedLogs) : [];
-        } catch (e) { return []; }
+        } catch (e) { 
+            console.error("Failed to load logs from localStorage.", e);
+            return []; 
+        }
     }
 
     saveLogsForSession(logs) {
-        // 【核心修正】所有保存都基于 this.sessionId
         if (!this.sessionId) return;
         localStorage.setItem('ca-gameLogs-' + this.sessionId, JSON.stringify(logs));
     }
