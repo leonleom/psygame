@@ -207,7 +207,6 @@ export class Game {
     }
 
     start(onGameComplete) {
-        this.dataLogger.clearLogsForCurrentSession();
         this.onGameCompleteCallback = onGameComplete;
         this.level = 0;
         this.loadLevel();
