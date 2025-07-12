@@ -1,4 +1,4 @@
-// modules/DataLogger.js - 数据采集模块 (最终完整版 - 职责分离) v9.0
+// modules/DataLogger.js (最终健壮版 - 增量发送) v10.0
 
 export class DataLogger {
     constructor() {
@@ -6,12 +6,17 @@ export class DataLogger {
         this.sessionId = this.getSessionId();
         this.protocolVersion = '1.0';
         
-        // 确保这里是你的 Vercel 地址
         this.backendUrl = 'https://psygame.vercel.app/api/log';
 
-        // 在页面关闭时作为最后保障的发送机制
+        // 追踪已发送的事件数量索引
+        this.lastSentEventIndex = this.loadLastSentIndex();
+
+        // 每隔15秒，定时检查并发送增量数据
+        this.batchSendInterval = setInterval(() => this.sendIncrementalData(), 15000);
+
+        // 在页面关闭时，尽力发送最后一批数据
         window.addEventListener('pagehide', () => {
-            this.sendFinalReport();
+            this.sendIncrementalData(true); // true 表示这是最后一次发送
         }, { capture: true });
     }
 
@@ -40,133 +45,95 @@ export class DataLogger {
         };
 
         logBuffer.push(event);
-        
         this.saveLogsForSession(logBuffer);
-        console.log(`[Event Persisted] Session: ${this.sessionId}, ID: #${eventSequenceId} - ${event.eventType}`);
+        console.log(`[Event Persisted] ID: #${eventSequenceId} - ${event.eventType}`);
     }
 
     /**
-     * 构建最终的汇总报告
-     * @returns {object} 一个包含所有游戏和问卷数据的对象
+     * 发送自上次发送以来的所有新数据 (增量发送)
+     * @param {boolean} isFinal - 标记这是否是会话的最后一次发送
      */
-    buildFinalReport() {
-        const allEvents = this.loadLogsForSession();
+    sendIncrementalData(isFinal = false) {
+        const allLogs = this.loadLogsForSession();
         
-        const gameProcessData = allEvents.filter(e => !e.eventType.startsWith('test_'));
-        const questionnaireResults = {};
-        const testEndEvents = allEvents.filter(e => e.eventType === 'test_end');
-        testEndEvents.forEach(e => {
-            const testId = e.eventPayload.testId;
-            if (testId) {
-                questionnaireResults[testId] = {
-                    answers: e.eventPayload.answers,
-                    results: e.eventPayload.results
-                };
+        // 找出所有未发送的事件
+        const unsentLogs = allLogs.slice(this.lastSentEventIndex);
+
+        if (unsentLogs.length === 0) {
+            if (isFinal) { // 如果是最后一次，但没有新数据，也要确保清理
+                this.clearAllDataForSession();
             }
-        });
-        
-        return {
-            participantId: this.participantId,
+            console.log("No new data to send.");
+            return;
+        }
+
+        console.log(`Preparing to send ${unsentLogs.length} new events...`);
+
+        // 构建要发送的负载
+        const payload = {
             sessionId: this.sessionId,
-            reportTimestamp: Date.now(),
-            data: {
-                gameplay: gameProcessData,
-                questionnaires: questionnaireResults
+            participantId: this.participantId,
+            isFinalChunk: isFinal, // 告诉后端这是否是最后一个数据块
+            events: unsentLogs
+        };
+        
+        const dataString = JSON.stringify(payload);
+        const dataBlob = new Blob([dataString], { type: 'application/json' });
+
+        // 定义发送成功后的回调函数
+        const onSuccess = () => {
+            this.lastSentEventIndex = allLogs.length;
+            this.saveLastSentIndex(this.lastSentEventIndex);
+            console.log(`Successfully sent events up to index ${this.lastSentEventIndex - 1}.`);
+            if (isFinal) {
+                this.clearAllDataForSession();
             }
         };
-    }
 
-    /**
-     * 发送最终的汇总报告
-     */
-    sendFinalReport() {
-        if (!this.sessionId || this.sessionId === 'undefined') {
-            console.error("Aborting sendFinalReport due to invalid sessionId.");
-            return;
-        }
-
-        const report = this.buildFinalReport();
-
-        const meaningfulGameplayEvents = report.data.gameplay.filter(
-            e => e.eventType !== 'experiment_session_start' && e.eventType !== 'experiment_session_end'
-        );
-
-        if (meaningfulGameplayEvents.length === 0 && Object.keys(report.data.questionnaires).length === 0) {
-            console.log("No meaningful data to send. Aborting final report.");
-            this.clearAllDataForSession();
-            return;
-        }
-
-        const dataString = JSON.stringify(report);
-        const dataBlob = new Blob([dataString], { type: 'application/json' });
-        
-        console.log("--- Sending Final Report ---", report);
-        
-        if (navigator.sendBeacon && dataBlob.size < 65536) {
-            try {
-                if (navigator.sendBeacon(this.backendUrl, dataBlob)) {
-                    console.log("Final report successfully queued via sendBeacon.");
-                    this.clearAllDataForSession();
-                } else {
-                    console.error("sendBeacon returned false. Attempting fetch fallback.");
-                    this.sendWithFetch(dataString);
-                }
-            } catch(e) {
-                 console.error("Error calling sendBeacon:", e);
-                 this.sendWithFetch(dataString);
+        // 优先使用 sendBeacon 发送最后的数据
+        if (isFinal && navigator.sendBeacon && dataBlob.size < 65536) {
+            if (navigator.sendBeacon(this.backendUrl, dataBlob)) {
+                onSuccess();
+            } else {
+                console.error("sendBeacon queueing failed. Data might be lost.");
             }
         } else {
-            this.sendWithFetch(dataString);
+            // 对于定时发送或备用方案，使用 fetch
+            fetch(this.backendUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: dataString,
+                keepalive: isFinal,
+            })
+            .then(res => {
+                if(res.ok) {
+                    onSuccess();
+                } else {
+                    console.error("Server responded with an error. Data will be resent later.");
+                }
+            })
+            .catch(err => console.error("Fetch error. Data will be resent later.", err));
         }
     }
     
-    /**
-     * 使用 fetch API 发送数据的备用方法
-     * @param {string} dataString - 已转换为字符串的 JSON 数据
-     */
-    sendWithFetch(dataString) {
-        fetch(this.backendUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: dataString,
-            keepalive: true,
-        })
-        .then(response => {
-            if (response.ok) {
-                console.log("Final report successfully sent via fetch.");
-                this.clearAllDataForSession();
-            } else {
-                console.error(`Server responded with status ${response.status}. Data might not have been saved.`);
-            }
-        })
-        .catch(error => {
-            console.error('Network error while sending final report via fetch:', error);
-        });
+    // --- 辅助函数 ---
+
+    loadLastSentIndex() {
+        return parseInt(sessionStorage.getItem('ca-lastSentIndex') || '0', 10);
     }
 
-    /**
-     * 【【【核心方法】】】
-     * 清除当前会话中所有的游戏日志 (非 test_ 开头的事件)，由 main.js 在导航到游戏时调用。
-     */
-    clearGameLogs() {
-        console.log(`Clearing game logs for session: ${this.sessionId}`);
-        
-        let logBuffer = this.loadLogsForSession();
-        let newLogBuffer = logBuffer.filter(e => e.eventType.startsWith('test_'));
-        this.saveLogsForSession(newLogBuffer);
+    saveLastSentIndex(index) {
+        sessionStorage.setItem('ca-lastSentIndex', String(index));
     }
 
-    /**
-     * 清理当前会话的所有本地存储数据 (主要在发送成功后调用)
-     */
     clearAllDataForSession() {
-        console.log(`Clearing all stored data for session: ${this.sessionId}`);
+        console.log(`Clearing all data for session: ${this.sessionId}`);
         localStorage.removeItem('ca-gameLogs-' + this.sessionId);
+        sessionStorage.removeItem('ca-lastSentIndex');
         localStorage.removeItem('bis11_results');
         localStorage.removeItem('csi_results');
     }
 
-    // --- 辅助函数 ---
     getOrCreateId(key) {
         let id = localStorage.getItem(key);
         if (!id) {
