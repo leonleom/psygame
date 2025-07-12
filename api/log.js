@@ -1,47 +1,52 @@
-// /api/log.js (汇总报告接收+健壮日志版)
+// /api/log.js (增量追加版)
 
 import fs from 'fs/promises';
 import path from 'path';
 
 export default async function handler(request, response) {
+  // 1. 只接受 POST 请求
   if (request.method !== 'POST') {
     return response.status(405).json({ message: 'Method Not Allowed. Please use POST.' });
   }
 
-  const finalReport = request.body;
+  // 2. 接收增量数据负载
+  const payload = request.body;
 
-  if (!finalReport || typeof finalReport !== 'object' || !finalReport.sessionId) {
-    // 在返回错误前，先把收到的东西打印出来
-    console.error("Received an invalid or empty report. Request body:", JSON.stringify(finalReport));
-    return response.status(400).json({ message: 'Invalid or malformed report data received.' });
+  // 3. 严格检查负载格式
+  if (!payload || !payload.sessionId || !Array.isArray(payload.events)) {
+    console.error("Received invalid incremental payload:", JSON.stringify(payload));
+    return response.status(400).json({ message: 'Invalid payload. Expecting {sessionId, events: []}.' });
+  }
+  
+  // 如果事件数组为空，也可以直接返回成功，不做任何事
+  if (payload.events.length === 0) {
+    console.log("Received a payload with 0 events. No action taken.");
+    return response.status(200).json({ message: 'Empty chunk received.' });
   }
 
   try {
-    const storagePath = path.join('/tmp', 'final_reports');
+    // 4. 准备存储路径和文件名
+    const storagePath = path.join('/tmp', 'session_logs');
     await fs.mkdir(storagePath, { recursive: true });
 
-    const sessionId = finalReport.sessionId;
-    const timestamp = finalReport.reportTimestamp || Date.now();
-    const fileName = `${sessionId}_${timestamp}.json`;
+    // 文件名只跟 sessionId 相关，使用 .jsonlog 扩展名表示 JSON Lines 格式
+    const fileName = `${payload.sessionId}.jsonlog`; 
     const filePath = path.join(storagePath, fileName);
 
-    // 【【【确保这部分代码存在！！！】】】
-    const jsonDataString = JSON.stringify(finalReport, null, 2);
-    
-    // 将整个报告对象格式化后写入文件
-    await fs.writeFile(filePath, jsonDataString);
-    
-    // 在日志中直接打印完整的数据！
-    console.log("--- START OF FINAL REPORT DATA ---"); // 我把名字改得更清晰了
-    console.log(jsonDataString);
-    console.log("--- END OF FINAL REPORT DATA ---");
+    // 5. 将每个事件对象转换为字符串，并用换行符连接
+    // 这种格式 (JSON Lines) 非常适合流式处理和追加数据
+    const dataToAppend = payload.events.map(event => JSON.stringify(event)).join('\n') + '\n';
 
-    // 成功响应
-    console.log(`Successfully saved final report to: ${filePath}`);
-    return response.status(200).json({ message: 'Final report received successfully.' });
+    // 6. 【核心】使用 fs.appendFile 来追加内容，而不是覆盖整个文件
+    await fs.appendFile(filePath, dataToAppend);
+
+    // 7. 成功响应
+    console.log(`Successfully appended ${payload.events.length} events to ${fileName}`);
+    return response.status(200).json({ message: 'Chunk received successfully.' });
 
   } catch (error) {
-    console.error('Error writing final report file:', error);
+    // 8. 错误处理
+    console.error('Error appending to log file:', error);
     return response.status(500).json({ message: 'Internal Server Error.', error: error.message });
   }
 }
