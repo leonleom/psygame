@@ -12,7 +12,7 @@ class DataLogger {
         this.protocolVersion = '1.0';
 
         this.logBuffer = [];
-        this.backendUrl = 'https://your-backend-api.com/log-endpoint'; // <--- 【【【请务必替换成你的真实后端地址】】】
+        this.backendUrl = 'https://psygame.vercel.app/api/log'; // <--- 【【【请务必替换成你的真实后端地址】】】
 
         this.batchSendInterval = setInterval(() => this.sendData(), 5000);
 
