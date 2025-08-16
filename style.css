@@ -1,0 +1,387 @@
+/* 全局与布局 */
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; margin: 0; background-color: #f0f2f5; color: #333; }
+.view { display: none; width: 100%; min-height: 100vh; animation: fadeIn 0.4s ease-in-out; }
+.view.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* 主导航页 */
+#view-home .main-header { text-align: center; padding: 40px 20px; }
+.card-container { display: flex; justify-content: center; flex-wrap: wrap; gap: 30px; padding: 20px; }
+.card { background: #fff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); width: 280px; padding: 25px; text-align: center; cursor: pointer; transition: transform 0.3s, box-shadow 0.3s; }
+.card:hover { transform: translateY(-8px); box-shadow: 0 8px 20px rgba(0,0,0,0.12); }
+.card-icon { font-size: 3rem; margin-bottom: 15px; }
+.card h2 { margin-top: 0; font-size: 1.25rem; }
+.card p { font-size: 0.9rem; color: #666; min-height: 60px; }
+.card-button { background-color: #007aff; color: white; border: none; border-radius: 8px; padding: 10px 20px; font-weight: bold; cursor: pointer; margin-top: 15px; }
+
+/* 模块通用头部 */
+.module-header { display: flex; align-items: center; padding: 15px 30px; background: #fff; border-bottom: 1px solid #ddd; }
+.back-button { background: none; border: 1px solid #ccc; font-size: 1rem; cursor: pointer; padding: 5px 10px; border-radius: 5px; }
+.module-header h2 { margin: 0; margin-left: 20px; font-size: 1.5rem; }
+
+/* 模块内容区 */
+.module-content { padding: 40px; max-width: 900px; margin: 0 auto; }
+.game-content { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+#game-status-bar { font-size: 1.2rem; background: #e9ecef; padding: 10px 20px; border-radius: 8px; color: #495057; }
+#mazeCanvas { border: 2px solid #343a40; background-color: #fff; }
+.intro-text-container { line-height: 1.8; font-size: 1.1rem; color: #444; }
+.intro-text-container h2 { color: #0056b3; border-bottom: 2px solid #e0e0e0; padding-bottom: 10px; margin-top: 40px; }
+.intro-text-container hr { border: 0; height: 1px; background-color: #ddd; margin: 40px 0; }
+.intro-text-container ul { list-style-type: disc; padding-left: 20px; }
+.intro-text-container li { margin-bottom: 10px; }
+
+/* 结果页 */
+.hidden { display: none !important; }
+#results-placeholder { text-align: center; padding: 50px; background: #fafafa; border-radius: 10px; }
+.charts-section { display: flex; justify-content: center; width: 100%; margin: 20px 0; }
+.chart-container { max-width: 500px; width: 100%; }
+
+/* 自定义模态框 */
+#custom-alert-overlay {
+    position: fixed; top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex; justify-content: center; align-items: center;
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+#custom-alert-overlay:not(.hidden) { opacity: 1; pointer-events: auto; }
+#custom-alert-box {
+    background: white; padding: 30px 40px; border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.2); text-align: center;
+    max-width: 400px; transform: scale(0.9); transition: transform 0.3s ease;
+}
+#custom-alert-overlay:not(.hidden) #custom-alert-box { transform: scale(1); }
+#custom-alert-message { font-size: 1.1rem; line-height: 1.6; margin-bottom: 25px; }
+#custom-alert-ok-btn {
+    background-color: #007bff; color: white; border: none;
+    border-radius: 8px; padding: 12px 30px; font-weight: bold;
+    cursor: pointer; font-size: 1rem;
+}
+
+/* --- 心理测评模块 v2 样式 --- */
+#test-selection-screen {
+    text-align: center;
+}
+.test-choice-container {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    margin-top: 40px;
+    flex-wrap: wrap;
+}
+.test-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    width: 280px;
+    padding: 25px;
+    text-align: center;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
+}
+.test-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+    border-color: #007aff;
+}
+.test-card h4 { margin-top: 0; font-size: 1.1rem; }
+.test-card p { font-size: 0.9rem; color: #666; min-height: 40px; }
+
+#questionnaire-interface {
+    background-color: #fff;
+    padding: 30px 40px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+#questionnaire-title { text-align: center; margin-top: 0; }
+.test-progress-bar { font-size: 1rem; color: #888; text-align: center; }
+#question-statement {
+    font-size: 1.25rem;
+    padding: 40px 20px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    text-align: center;
+    min-height: 80px;
+}
+#questionnaire-options {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 15px;
+    padding: 20px 0;
+}
+.q-option-btn {
+    padding: 10px 20px;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    background-color: #fff;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+}
+.q-option-btn.selected {
+    background-color: #007aff;
+    color: white;
+    border-color: #007aff;
+}
+#questionnaire-nav-buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+}
+#questionnaire-nav-buttons button {
+    background-color: #e9ecef;
+    border: none;
+    padding: 12px 28px;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+}
+#questionnaire-nav-buttons button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+#questionnaire-end-screen {
+    text-align: center;
+    padding: 40px;
+    background-color: #fff;
+    border-radius: 12px;
+}
+
+/* --- 结果分析页 全新UI样式 v3.0 (强制 Margin 版) --- */
+
+/* 结果页主内容区 - 不再需要 flex 或 gap */
+.results-content {
+    /* 我们可以移除这里的所有布局属性 */
+}
+
+/* 【【【核心修改】】】 */
+/* 为每一个独立的报告区块（卡片）应用样式 */
+.result-section {
+    background: #fff;
+    border-radius: 16px;
+    padding: 25px 35px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.07);
+    border: 1px solid #e9e9e9;
+    overflow: hidden;
+    
+    /* 使用 margin-bottom 来强制创建垂直间距 */
+    margin-bottom: 40px; /* <--- 这就是解决问题的关键！ */
+}
+
+/* 【【【核心修改】】】 */
+/* 确保最后一个区块下方没有多余的间距，让布局更美观 */
+.result-section:last-child {
+    margin-bottom: 0;
+}
+
+/* 报告区块的标题样式 */
+.result-section h3 {
+    font-size: 1.6rem; /* 更大的字体 */
+    color: #1a253c; /* 深蓝灰色，更专业 */
+    margin-top: 0;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #f0f2f5;
+    display: flex;
+    align-items: center;
+}
+
+/* 为标题添加一个装饰性的图标 (可选，但效果好) */
+.result-section h3::before {
+    content: '📊'; /* 默认图标 */
+    margin-right: 15px;
+    font-size: 1.5rem;
+}
+/* 为不同区块设置不同图标 */
+#game-report-section h3::before { content: '🎮'; }
+#deep-analysis-section h3::before { content: '🧠'; }
+#bis11-report-section h3::before { content: '⚡️'; }
+#csi-report-section h3::before { content: '🎨'; }
+#cfi-report-section h3::before { content: '🎨'; }
+#mai-report-section h3::before { content: '🎨'; }
+
+
+/* “玩家风格初探”总结区样式 */
+.player-style-summary {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    padding: 25px;
+    border-radius: 12px;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.player-style-summary p:first-child {
+    font-size: 1.2rem;
+    color: #495057;
+    margin: 0 0 10px 0;
+}
+
+.player-style-tag {
+    display: inline-block;
+    padding: 8px 20px;
+    background-color: #007aff;
+    color: white;
+    border-radius: 50px; /* 胶囊形状 */
+    font-weight: bold;
+    font-size: 1.5rem; /* 醒目的大字体 */
+    margin: 5px 0 15px 0;
+    box-shadow: 0 4px 10px rgba(0, 122, 255, 0.3);
+    transition: transform 0.2s ease-in-out;
+}
+.player-style-tag:hover {
+    transform: scale(1.05);
+}
+
+.player-style-summary .interpretation-text {
+    font-size: 1rem;
+    color: #6c757d;
+    line-height: 1.7;
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+/* 即时报告表格样式 (保持不变，但与新卡片结合效果更佳) */
+#game-summary-table table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    font-size: 1rem;
+}
+#game-summary-table th, #game-summary-table td {
+    border: 1px solid #e0e6ed;
+    padding: 12px 15px;
+    text-align: center; /* 居中对齐数据 */
+}
+#game-summary-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #495057;
+}
+#game-summary-table tbody tr:nth-child(even) {
+    background-color: #fcfdff;
+}
+#game-summary-table .status-win {
+    color: #198754;
+    font-weight: bold;
+}
+#game-summary-table .status-fail {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+/* 深度分析占位符样式 */
+.placeholder-content {
+    background-color: #f8f9fa;
+    border: 2px dashed #dee2e6;
+    padding: 25px;
+    border-radius: 12px;
+    text-align: center;
+    color: #6c757d;
+    line-height: 1.8;
+}
+
+/* 问卷结果总结区样式 */
+.questionnaire-summary {
+    font-size: 1.1rem;
+    line-height: 1.9;
+    color: #343a40;
+}
+.questionnaire-summary p strong {
+    color: #0d6efd;
+}
+
+/* style.css (在末尾追加) */
+
+/* 问卷单选按钮和下拉菜单样式 */
+.q-radio-label {
+    display: block;
+    padding: 10px 15px;
+    margin: 5px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    cursor: pointer;
+    background-color: #fff;
+    transition: background-color 0.2s;
+}
+
+.q-radio-label:hover {
+    background-color: #f0f2f5;
+}
+
+.q-radio-label input {
+    margin-right: 10px;
+}
+
+.q-select {
+    padding: 12px;
+    font-size: 1rem;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    min-width: 250px;
+    cursor: pointer;
+}
+
+/* 问卷数字输入框样式 */
+.q-number-input {
+    padding: 12px;
+    font-size: 1.2rem;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    text-align: center;
+    width: 200px;
+}
+
+/* style.css (在末尾追加) */
+
+/* 指导语页面样式 */
+#instruction-screen .intro-text-container {
+    padding: 20px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+#start-test-btn {
+    display: block;
+    margin: 30px auto 10px;
+    min-width: 200px;
+}
+
+/* 瑞文测验图片样式 */
+.rpm-main-image {
+    display: block;
+    max-width: 100%;
+    max-height: 60vh; /* 限制图片最大高度 */
+    margin: 0 auto 20px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+
+/* 瑞文测验数字选项按钮容器 */
+.rpm-numeric-options {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.view { 
+    display: none; 
+    width: 100%; 
+    min-height: 100vh;
+    animation: fadeIn 0.4s ease-in-out; 
+}
+.view.active { 
+    display: block; 
+    overflow-y: auto; /* <-- 新增这一行 */
+}
