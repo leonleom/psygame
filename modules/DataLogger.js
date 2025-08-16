@@ -6,7 +6,7 @@ export class DataLogger {
         this.sessionId = this.getSessionId();
         this.protocolVersion = '1.0';
         
-        this.backendUrl = 'https://psygame.vercel.app/api/log';
+        this.backendUrl = 'https://jnbcdnmqapamyftmmegz.supabase.co/functions/v1/log';
 
         // 追踪已发送的事件数量索引
         this.lastSentEventIndex = this.loadLastSentIndex();
